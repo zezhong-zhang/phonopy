@@ -230,11 +230,11 @@ class TotalDos(Dos):
     def plot(self, ax, xlabel=None, ylabel=None, draw_grid=True, flip_xy=False):
         """Plot total DOS."""
         if flip_xy:
-            _xlabel = "Density of states"
-            _ylabel = "Frequency"
+            _xlabel = "Density of states (States/THz-atom)"
+            _ylabel = "Frequency (THz)"
         else:
-            _xlabel = "Frequency"
-            _ylabel = "Density of states"
+            _xlabel = "Frequency (THz)"
+            _ylabel = "Density of states (States/THz-atom)"
 
         if xlabel is not None:
             _xlabel = xlabel

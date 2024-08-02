@@ -1917,16 +1917,18 @@ class Phonopy:
                 label_mode="L",
             )
             self._band_structure.plot(axs[:-1])
-
+            for ax in axs[:-1]:
+                ax.set_xlabel("Wave vector")
+            
             if pdos_indices is None:
                 self._total_dos.plot(
-                    axs[-1], xlabel="", ylabel="", draw_grid=False, flip_xy=True
+                    axs[-1], xlabel="DOS (states/THz-atom)", ylabel="", draw_grid=False, flip_xy=True
                 )
             else:
                 self._pdos.plot(
                     axs[-1],
                     indices=pdos_indices,
-                    xlabel="",
+                    xlabel="DOS (states/THz-atom)",
                     ylabel="",
                     draw_grid=False,
                     flip_xy=True,
