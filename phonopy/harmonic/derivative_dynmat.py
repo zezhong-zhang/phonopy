@@ -1,4 +1,5 @@
 """Calculation of derivative of dynamical matrix with respect to q."""
+
 # Copyright (C) 2013 Atsushi Togo
 # All rights reserved.
 #
@@ -54,6 +55,8 @@ class DerivativeOfDynamicalMatrix:
 
     """
 
+    Q_DIRECTION_TOLERANCE = 1e-5
+
     def __init__(self, dynamical_matrix: Union[DynamicalMatrix, DynamicalMatrixNAC]):
         """Init method.
 
@@ -82,7 +85,6 @@ class DerivativeOfDynamicalMatrix:
             self._multi = multi
         else:
             self._svecs, self._multi = sparse_to_dense_svecs(svecs, multi)
-        # self._svecs, self._multi = self._pcell.get_smallest_vectors()
 
         self._ddm = None
 
@@ -125,6 +127,7 @@ class DerivativeOfDynamicalMatrix:
             "DerivativeOfDynamicalMatrix.get_derivative_of_dynamical_matrix() is "
             "deprecated. Use d_dynamical_matrix attribute instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.d_dynamical_matrix
 
@@ -132,25 +135,34 @@ class DerivativeOfDynamicalMatrix:
         import phonopy._phonopy as phonoc
 
         num_patom = len(self._p2s_map)
-
         fc = self._force_constants
         ddm = np.zeros(
             (3, num_patom * 3, num_patom * 3),
             dtype=("c%d" % (np.dtype("double").itemsize * 2)),
         )
-        if self._dynmat.is_nac():
+        reclat = np.array(np.linalg.inv(self._pcell.cell), dtype="double", order="C")
+
+        is_nac = False
+        is_nac_q_zero = True
+        born = np.zeros(9)  # dummy value
+        dielectric = np.zeros(9)  # dummy value
+        nac_factor = 0  # dummy value
+        q_dir = np.zeros(3)  # dummy value
+
+        if isinstance(self._dynmat, DynamicalMatrixNAC):
+            is_nac = True
             born = self._dynmat.born
             dielectric = self._dynmat.dielectric_constant
             nac_factor = self._dynmat.nac_factor
             if q_direction is None:
-                q_dir = None
+                q_norm = np.linalg.norm(reclat @ q)
+                if q_norm < self.Q_DIRECTION_TOLERANCE:
+                    is_nac = False
+                else:
+                    is_nac_q_zero = True
             else:
-                q_dir = np.array(q_direction, dtype="double", order="C")
-        else:
-            born = None
-            dielectric = None
-            nac_factor = 0
-            q_dir = None
+                q_dir = np.array(q_direction, dtype="double")
+                is_nac_q_zero = False
 
         if fc.shape[0] == fc.shape[1]:  # full fc
             phonoc.derivative_dynmat(
@@ -158,6 +170,7 @@ class DerivativeOfDynamicalMatrix:
                 fc,
                 np.array(q, dtype="double"),
                 np.array(self._pcell.cell.T, dtype="double", order="C"),
+                reclat,
                 self._svecs,
                 self._multi,
                 self._pcell.masses,
@@ -167,6 +180,9 @@ class DerivativeOfDynamicalMatrix:
                 born,
                 dielectric,
                 q_dir,
+                is_nac * 1,
+                is_nac_q_zero * 1,
+                self._dynmat.use_openmp * 1,
             )
         else:
             phonoc.derivative_dynmat(
@@ -174,6 +190,7 @@ class DerivativeOfDynamicalMatrix:
                 fc,
                 np.array(q, dtype="double"),
                 np.array(self._pcell.cell.T, dtype="double", order="C"),
+                np.array(np.linalg.inv(self._pcell.cell), dtype="double", order="C"),
                 self._svecs,
                 self._multi,
                 self._pcell.masses,
@@ -183,12 +200,20 @@ class DerivativeOfDynamicalMatrix:
                 born,
                 dielectric,
                 q_dir,
+                is_nac * 1,
+                is_nac_q_zero * 1,
+                self._dynmat.use_openmp * 1,
             )
 
         self._ddm = ddm
 
     def _run_py(self, q, q_direction=None):
-        if self._dynmat.is_nac():
+        """Run in python.
+
+        This works only for full-FC.
+
+        """
+        if isinstance(self._dynmat, DynamicalMatrixNAC):
             if q_direction is None:
                 fc_nac = self._nac(q)
                 d_nac = self._d_nac(q)
@@ -197,6 +222,7 @@ class DerivativeOfDynamicalMatrix:
                 d_nac = self._d_nac(q_direction)
 
         fc = self._force_constants
+        assert fc.shape[0] == fc.shape[1]
         vecs = self._svecs
         multiplicity = self._multi
         num_patom = len(self._p2s_map)
@@ -223,7 +249,7 @@ class DerivativeOfDynamicalMatrix:
                     continue
 
                 multi = multiplicity[k, i]
-                vecs_multi = vecs[k, i, :multi]
+                vecs_multi = vecs[multi[1] : multi[1] + multi[0]]
                 phase_multi = np.exp(
                     [np.vdot(vec, q) * 2j * np.pi for vec in vecs_multi]
                 )
@@ -237,7 +263,7 @@ class DerivativeOfDynamicalMatrix:
                 else:
                     coef = coef_order1
 
-                if self._dynmat.is_nac():
+                if isinstance(self._dynmat, DynamicalMatrixNAC):
                     fc_elem = fc[s_i, k] + fc_nac[i, j]
                 else:
                     fc_elem = fc[s_i, k]
@@ -245,11 +271,12 @@ class DerivativeOfDynamicalMatrix:
                 for ll in range(num_elem):
                     ddm_elem = fc_elem * (coef[:, ll] * phase_multi).sum()
                     if (
-                        self._dynmat.is_nac() and not self._derivative_order == 2
-                    ):  # noqa E129
+                        isinstance(self._dynmat, DynamicalMatrixNAC)
+                        and not self._derivative_order == 2
+                    ):
                         ddm_elem += d_nac[ll, i, j] * phase_multi.sum()
 
-                    ddm_local[ll] += ddm_elem / mass / multi
+                    ddm_local[ll] += ddm_elem / mass / multi[0]
 
             ddm[:, (i * 3) : (i * 3 + 3), (j * 3) : (j * 3 + 3)] = ddm_local
 

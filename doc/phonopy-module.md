@@ -2,11 +2,6 @@
 
 # Phonopy API for Python
 
-```{contents}
-:depth: 2
-:local:
-```
-
 **This is under development. Configurations may alter.** Requests or suggestions
 are very welcome.
 
@@ -37,12 +32,11 @@ For VASP format, the keyword argument of `interface_mode` can be omitted. For
 QE,
 
 ```python
-unitcell, _ = read_crystal_structure("NaCl.in", interface_mode='qe')
+unitcell, optional_structure_info = read_crystal_structure("NaCl.in", interface_mode='qe')
 ```
 
-Note that `read_crystal_structure` returns a tuple and the first element is th
+Note that `read_crystal_structure` returns a tuple and the first element is the
 `PhonopyAtoms` instance.
-
 ## Work flow
 
 The work flow is schematically shown in {ref}`workflow`.
@@ -85,7 +79,10 @@ supercells = phonon.supercells_with_displacements
 ```
 
 In this example, the displacement distance is set to 0.03 (in Angstrom if the
-crystal structure uses the Angstrom unit and the default value is 0.01.)
+crystal structure uses the Angstrom unit and the default value is 0.01.) The
+supercells with displacements are given as a list of `PhonopyAtoms`. See
+{ref}`phonopy_read_write_structure` to write
+those into files in a crystal structure format.
 
 The frequency unit conversion factor to THz has to be set by using the `factor`
 keyword in `Phonopy` class. The factors are `VaspToTHz` for VASP, `Wien2kToTHz`
@@ -691,6 +688,87 @@ Symmetry search tolerance (often the name `symprec` is used in phonopy) is used
 to determine symmetry operations of the crystal structures. The physical unit
 follows that of input crystal structure.
 
+(phonopy_read_write_structure)=
+## Read and write crystal structures
+
+There is a function to write the `PhonopyAtoms` instance into crystal structure
+formats of different force calculators, `write_crystal_structure`. This works as
+a partner of `read_crystal_structure`. Taking an example of QE interface, how to
+use these functions is shown below.
+
+```ipython
+In [1]: from phonopy.interface.calculator import read_crystal_structure, write_crystal_structure
+
+In [2]: !cat "NaCl.in"
+ &control
+    calculation = 'scf'
+    tprnfor = .true.
+    tstress = .true.
+    pseudo_dir = '/home/togo/espresso/pseudo/'
+ /
+ &system
+    ibrav = 0
+    nat = 8
+    ntyp = 2
+    ecutwfc = 70.0
+ /
+ &electrons
+    diagonalization = 'david'
+    conv_thr = 1.0d-9
+ /
+ATOMIC_SPECIES
+ Na  22.98976928 Na.pbe-spn-kjpaw_psl.0.2.UPF
+ Cl  35.453      Cl.pbe-n-kjpaw_psl.0.1.UPF
+ATOMIC_POSITIONS crystal
+ Na   0.0000000000000000  0.0000000000000000  0.0000000000000000
+ Na   0.0000000000000000  0.5000000000000000  0.5000000000000000
+ Na   0.5000000000000000  0.0000000000000000  0.5000000000000000
+ Na   0.5000000000000000  0.5000000000000000  0.0000000000000000
+ Cl   0.5000000000000000  0.5000000000000000  0.5000000000000000
+ Cl   0.5000000000000000  0.0000000000000000  0.0000000000000000
+ Cl   0.0000000000000000  0.5000000000000000  0.0000000000000000
+ Cl   0.0000000000000000  0.0000000000000000  0.5000000000000000
+CELL_PARAMETERS angstrom
+ 5.6903014761756712 0 0
+ 0 5.6903014761756712 0
+ 0 0 5.6903014761756712
+K_POINTS automatic
+ 8 8 8 1 1 1
+
+In [3]: cell, optional_structure_info = read_crystal_structure("NaCl.in", interface_mode='qe')
+
+In [4]: optional_structure_info
+Out[4]:
+('NaCl.in',
+ {'Na': 'Na.pbe-spn-kjpaw_psl.0.2.UPF', 'Cl': 'Cl.pbe-n-kjpaw_psl.0.1.UPF'})
+
+In [5]: write_crystal_structure("NaCl-out.in", cell, interface_mode='qe', optional_structure_info=optional_structure_info)
+
+In [6]: !cat "NaCl-out.in"
+!    ibrav = 0, nat = 8, ntyp = 2
+CELL_PARAMETERS bohr
+   10.7531114272216008    0.0000000000000000    0.0000000000000000
+    0.0000000000000000   10.7531114272216008    0.0000000000000000
+    0.0000000000000000    0.0000000000000000   10.7531114272216008
+ATOMIC_SPECIES
+ Na   22.98977   Na.pbe-spn-kjpaw_psl.0.2.UPF
+ Cl   35.45300   Cl.pbe-n-kjpaw_psl.0.1.UPF
+ATOMIC_POSITIONS crystal
+ Na   0.0000000000000000  0.0000000000000000  0.0000000000000000
+ Na   0.0000000000000000  0.5000000000000000  0.5000000000000000
+ Na   0.5000000000000000  0.0000000000000000  0.5000000000000000
+ Na   0.5000000000000000  0.5000000000000000  0.0000000000000000
+ Cl   0.5000000000000000  0.5000000000000000  0.5000000000000000
+ Cl   0.5000000000000000  0.0000000000000000  0.0000000000000000
+ Cl   0.0000000000000000  0.5000000000000000  0.0000000000000000
+ Cl   0.0000000000000000  0.0000000000000000  0.5000000000000000
+```
+
+Depending on calculator interfaces, all the information can not be recovered
+from the information obtained from `read_crystal_structure`. More details about
+how `write_crystal_structure` works may need to read directly the
+[code](https://github.com/phonopy/phonopy/blob/develop/phonopy/interface/calculator.py#L123).
+
 ## Getting parameters for non-analytical term correction
 
 Parameters for non-analytical term correction may be made as follows. This
@@ -725,35 +803,4 @@ borns_, epsilon_ = symmetrize_borns_and_epsilon(
 nac_params = {'born': borns_,
               'factor': Hartree * Bohr,
               'dielectric': epsilon_}
-```
-
-## PhononDB at Kyoto university
-
-The phonon calculation database at
-http://phonondb.mtl.kyoto-u.ac.jp/ph20180417/index.html can be easily used from
-phonopy-API. Downloading the raw data, e.g., `mp-361-20180417.tar.lzma` and
-expand it. In the directory `mp-361-20180417`,
-
-```python
-% ipython
-```
-
-or we can use jupyter notebook. The data is loaded by
-
-```python
-In [1]: import phonopy
-
-In [2]: ph = phonopy.load("phonon.yaml")
-```
-
-For example, the band structure is plotted by
-
-```python
-In [3]: ph.auto_band_structure(plot=True).show()
-```
-
-and similarly for PDOS
-
-```python
-In [4]: ph.auto_projected_dos(plot=True).show()
 ```

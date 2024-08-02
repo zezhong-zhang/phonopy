@@ -1,4 +1,5 @@
 """Calculation of Smith normal form of 3x3 matrix."""
+
 # Copyright (C) 2020 Atsushi Togo
 # All rights reserved.
 #
@@ -89,7 +90,7 @@ class SNF3x3:
 
     def run(self):
         """Calculate SNF."""
-        for i in self:
+        for _ in self:
             pass
 
         A = np.dot(self._P, np.dot(self._A_orig, self._Q))
@@ -369,7 +370,7 @@ class Xgcd:
         s1 = 0
         t0 = 0
         t1 = 1
-        for i in range(1000):
+        for _ in range(1000):
             r0, r1, s0, s1, t0, t1 = self._step(r0, r1, s0, s1, t0, t1)
             if r1 == 0:
                 break

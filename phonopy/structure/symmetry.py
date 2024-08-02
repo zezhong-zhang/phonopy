@@ -1,4 +1,5 @@
 """Crystal symmetry routines."""
+
 # Copyright (C) 2011 Atsushi Togo
 # All rights reserved.
 #
@@ -32,8 +33,11 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+from __future__ import annotations
 
 import warnings
+from collections.abc import Sequence
+from typing import Optional
 
 import numpy as np
 import spglib
@@ -51,7 +55,11 @@ class Symmetry:
     """Class to find and store crystal symmetry information."""
 
     def __init__(
-        self, cell: PhonopyAtoms, symprec=1e-5, is_symmetry=True, s2p_map=None
+        self,
+        cell: PhonopyAtoms,
+        symprec: float = 1e-5,
+        is_symmetry: bool = True,
+        s2p_map: Optional[np.ndarray] = None,
     ):
         """Init method.
 
@@ -82,9 +90,6 @@ class Symmetry:
         self._map_operations = None
 
         magmom = cell.magnetic_moments
-        if isinstance(magmom, np.ndarray):
-            if (magmom < symprec).all():
-                magmom = None
 
         if not is_symmetry:
             self._set_nosym(s2p_map)
@@ -125,6 +130,7 @@ class Symmetry:
             "Symmetry.get_symmetry_operations() is deprecated."
             "Use symmetry_operations attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.symmetry_operations
 
@@ -147,6 +153,7 @@ class Symmetry:
             "Symmetry.get_pointgroup_operations() is deprecated."
             "Use pointgroup_operations attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.pointgroup_operations
 
@@ -161,6 +168,7 @@ class Symmetry:
             "Symmetry.get_pointgroup() is deprecated."
             "Use pointgroup_symbol attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self._pointgroup
 
@@ -186,6 +194,7 @@ class Symmetry:
         warnings.warn(
             "Symmetry.get_dataset() is deprecated." "Use dataset attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.dataset
 
@@ -242,6 +251,7 @@ class Symmetry:
             "Symmetry.get_symmetry_tolerance() is deprecated."
             "Use tolerance attribute instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.tolerance
 
@@ -263,6 +273,7 @@ class Symmetry:
             "Symmetry.get_reciprocal_operations() is deprecated."
             "Use reciprocal_operations attribute instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.reciprocal_operations
 
@@ -283,6 +294,7 @@ class Symmetry:
             "Symmetry.get_atomic_permutations() is deprecated."
             "Use atomic_permutations attribute instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.atomic_permutations
 
@@ -330,10 +342,14 @@ class Symmetry:
         self._map_atoms = self._dataset["equivalent_atoms"]
 
     def _set_symmetry_operations_with_magmoms(self):
-        self._symmetry_operations = spglib.get_symmetry(
+        self._dataset = spglib.get_magnetic_symmetry_dataset(
             self._cell.totuple(), symprec=self._symprec
         )
-        self._map_atoms = self._symmetry_operations["equivalent_atoms"]
+        self._symmetry_operations = {
+            "rotations": self._dataset["rotations"],
+            "translations": self._dataset["translations"],
+        }
+        self._map_atoms = self._dataset["equivalent_atoms"]
 
     def _set_independent_atoms(self):
         indep_atoms = []
@@ -348,6 +364,7 @@ class Symmetry:
             "This was replaced by "
             "_get_map_operations_from_permutations.",
             DeprecationWarning,
+            stacklevel=2,
         )
 
         ops = self._symmetry_operations
@@ -439,7 +456,23 @@ def collect_unique_rotations(rotations):
 
 
 def get_lattice_vector_equivalence(point_symmetry):
-    """Return (b==c, c==a, a==b)."""
+    """Return equivalences of basis vector length pairs, (b==c, c==a, a==b).
+
+    Change of basis is defined by
+
+    (a', b', c') = (a, b, c) R.
+
+    Then, check rotation matrices if
+        a -> b, b -> c, c -> a, a -> -b, b -> -c, and c -> -a,
+    can happen.
+
+    Parameters
+    ----------
+    point_symmetry : array_like
+        Rotation matrices.
+        shape=(n_rot, 3, 3), dtype=int.
+
+    """
     # primitive_vectors: column vectors
 
     equivalence = [False, False, False]
@@ -529,14 +562,14 @@ def elaborate_borns_and_epsilon(
 
 
 def symmetrize_borns_and_epsilon(
-    borns,
-    epsilon,
-    ucell,
-    primitive_matrix=None,
-    primitive=None,
-    supercell_matrix=None,
-    symprec=1e-5,
-    is_symmetry=True,
+    borns: Sequence,
+    epsilon: Sequence,
+    ucell: PhonopyAtoms,
+    primitive_matrix: Optional[Sequence] = None,
+    primitive: PhonopyAtoms = None,
+    supercell_matrix: Optional[Sequence] = None,
+    symprec: float = 1e-5,
+    is_symmetry: bool = True,
 ):
     """Symmetrize Born effective charges and dielectric tensor.
 
@@ -594,7 +627,7 @@ def symmetrize_borns_and_epsilon(
         ]
         import warnings
 
-        warnings.warn("\n".join(lines))
+        warnings.warn("\n".join(lines), stacklevel=2)
 
     if primitive_matrix is None and primitive is None:
         return borns_, epsilon_
@@ -641,11 +674,13 @@ def _take_average_of_borns(borns, rotations, translations, cell, symprec):
     return borns_
 
 
-def _get_mapping_between_cells(cell_from, cell_to, symprec=1e-5):
+def _get_mapping_between_cells(
+    cell_from: PhonopyAtoms, cell_to: PhonopyAtoms, symprec: float = 1e-5
+):
     indices = []
     lattice = cell_from.cell
     pos_from = cell_from.scaled_positions
-    for i, p_to in enumerate(cell_to.scaled_positions):
+    for p_to in cell_to.scaled_positions:
         diff = pos_from - p_to
         diff -= np.rint(diff)
         dist = np.sqrt(np.sum(np.dot(diff, lattice) ** 2, axis=1))

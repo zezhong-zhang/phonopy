@@ -1,8 +1,12 @@
 """Tests for dynamical matrix classes."""
+
+from __future__ import annotations
+
 import numpy as np
 import pytest
 
-from phonopy.harmonic.dynamical_matrix import DynamicalMatrixGL
+from phonopy import Phonopy
+from phonopy.harmonic.dynamical_matrix import DynamicalMatrix, DynamicalMatrixGL
 
 dynmat_ref_000 = [
     0.052897,
@@ -459,7 +463,12 @@ dynmat_ref_555 = [
 @pytest.mark.parametrize(
     "is_compact_fc,lang", [(True, "C"), (False, "C"), (True, "Py"), (False, "Py")]
 )
-def test_dynmat(ph_nacl_nonac, ph_nacl_nonac_compact_fc, is_compact_fc, lang):
+def test_dynmat(
+    ph_nacl_nonac: Phonopy,
+    ph_nacl_nonac_compact_fc: Phonopy,
+    is_compact_fc: bool,
+    lang: str,
+):
     """Test dynamical matrix of NaCl in C and python implementations.
 
     1. Without NAC.
@@ -476,7 +485,7 @@ def test_dynmat(ph_nacl_nonac, ph_nacl_nonac_compact_fc, is_compact_fc, lang):
 
 
 @pytest.mark.parametrize("lang", ["C", "Py"])
-def test_dynmat_dense_svecs(ph_nacl_nonac_dense_svecs, lang):
+def test_dynmat_dense_svecs(ph_nacl_nonac_dense_svecs: Phonopy, lang: str):
     """Test with dense svecs."""
     ph = ph_nacl_nonac_dense_svecs
     dynmat = ph.dynamical_matrix
@@ -484,13 +493,84 @@ def test_dynmat_dense_svecs(ph_nacl_nonac_dense_svecs, lang):
     _test_dynmat_252525(dynmat, dynmat_ref_252525, lang=lang)
 
 
-def test_dynmat_gonze_lee(ph_nacl):
+def test_dynmat_gonze_lee(ph_nacl: Phonopy):
     """Test with NAC by Gonze and Lee."""
     dynmat = ph_nacl.dynamical_matrix
     _test_dynmat_252525(dynmat, dynmat_gonze_lee_ref_252525)
 
 
-def test_dynmat_gonze_lee_full_term(ph_nacl):
+def test_dynmat_gonze_lee_short_range_fc(ph_nacl: Phonopy):
+    """Test force constants in dynamical matrix with NAC by Gonze and Lee."""
+    # Test getter
+    ph_nacl.dynamical_matrix.make_Gonze_nac_dataset()
+
+    assert ph_nacl.dynamical_matrix._G_cutoff == pytest.approx(1.1584988384375283)
+    assert ph_nacl.dynamical_matrix._G_list.shape == (307, 3)
+    np.testing.assert_allclose(
+        ph_nacl.dynamical_matrix._dd_q0.view("double").ravel(),
+        [
+            0.5509692730441111,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.5509692730441109,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.5509692730441113,
+            0.0,
+            0.5509692730441111,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.5509692730441109,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.5509692730441113,
+            0.0,
+        ],
+        atol=1e-5,
+    )
+    fc = ph_nacl.dynamical_matrix.force_constants
+    sr_fc = ph_nacl.dynamical_matrix.short_range_force_constants
+    np.testing.assert_allclose(
+        np.diag(fc[0, 1]), [-0.3017767, 0.0049673, 0.0049673], atol=1e-5
+    )
+    np.testing.assert_allclose(
+        np.diag(sr_fc[0, 1]), [-0.13937495, -0.04645899, -0.04645899], atol=1e-5
+    )
+
+    # Test setter.
+    ph_nacl.dynamical_matrix.short_range_force_constants = fc
+    sr_fc = ph_nacl.dynamical_matrix.short_range_force_constants
+    np.testing.assert_allclose(
+        np.diag(sr_fc[0, 1]), [-0.3017767, 0.0049673, 0.0049673], atol=1e-5
+    )
+    ph_nacl.dynamical_matrix.make_Gonze_nac_dataset()
+    sr_fc = ph_nacl.dynamical_matrix.short_range_force_constants
+    np.testing.assert_allclose(
+        np.diag(sr_fc[0, 1]), [-0.13937495, -0.04645899, -0.04645899], atol=1e-5
+    )
+
+
+def test_dynmat_gonze_lee_full_term(ph_nacl: Phonopy):
     """Test with NAC by Gonze and Lee."""
     dynmat = ph_nacl.dynamical_matrix
     _dynmat = DynamicalMatrixGL(
@@ -503,19 +583,13 @@ def test_dynmat_gonze_lee_full_term(ph_nacl):
     _test_dynmat_252525(_dynmat, dynmat_gonze_lee_full_ref_252525)
 
 
-def test_dynmat_wang(ph_nacl):
+def test_dynmat_wang(ph_nacl_wang: Phonopy):
     """Test with NAC by Wang et al."""
-    nac_params = ph_nacl.nac_params
-    nac_params["method"] = "wang"
-    ph_nacl.nac_params = nac_params
-    dynmat = ph_nacl.dynamical_matrix
+    dynmat = ph_nacl_wang.dynamical_matrix
     _test_dynmat_252525(dynmat, dynmat_wang_ref_252525)
-    # Reset nac_params['method']
-    nac_params.pop("method")
-    ph_nacl.nac_params = nac_params
 
 
-def _test_dynmat(dynmat, lang=None):
+def _test_dynmat(dynmat: DynamicalMatrix, lang=None):
     dtype_complex = "c%d" % (np.dtype("double").itemsize * 2)
     if lang:
         dynmat.run([0, 0, 0], lang=lang)
@@ -536,7 +610,7 @@ def _test_dynmat(dynmat, lang=None):
     np.testing.assert_allclose(dynmat.dynamical_matrix, dynmat_ref, atol=1e-5)
 
 
-def _test_dynmat_252525(dynmat, dynmat_ref, lang=None):
+def _test_dynmat_252525(dynmat: DynamicalMatrix, dynmat_ref: list, lang=None):
     dtype_complex = "c%d" % (np.dtype("double").itemsize * 2)
     if lang:
         dynmat.run([0.25, 0.25, 0.25], lang=lang)
@@ -544,7 +618,9 @@ def _test_dynmat_252525(dynmat, dynmat_ref, lang=None):
         dynmat.run([0.25, 0.25, 0.25])
     # for row in dynmat.dynamical_matrix:
     #     print("".join(["%f, %f, " % (c.real, c.imag) for c in row]))
-    dynmat_ref = (
-        np.array(dynmat_ref, dtype="double").view(dtype=dtype_complex).reshape(6, 6)
+
+    np.testing.assert_allclose(
+        dynmat.dynamical_matrix,
+        np.array(dynmat_ref, dtype="double").view(dtype=dtype_complex).reshape(6, 6),
+        atol=1e-5,
     )
-    np.testing.assert_allclose(dynmat.dynamical_matrix, dynmat_ref, atol=1e-5)

@@ -1,7 +1,9 @@
 """Tests for irreducible representation calculations."""
+
+from __future__ import annotations
+
 import os
 from io import StringIO
-from typing import List
 
 import numpy as np
 
@@ -390,6 +392,73 @@ chars_P3m1 = """ 2.  0. -1.  0. -1.  0. -0.  0.  0.  0. -0.  0.
  1.  0.  1.  0.  1.  0.  1.  0.  1.  0.  1.  0.
  1.  0.  1.  0.  1.  0.  1.  0.  1.  0.  1.  0."""
 
+chars_P31m = """1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+ 2.  0. -1.  0. -1.  0. -0.  0.  0.  0. -0.  0.
+ 2.  0. -1.  0. -1.  0.  0.  0. -0.  0.  0.  0.
+ 1.  0.  1.  0.  1.  0. -1.  0. -1.  0. -1.  0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+ 2.  0. -1.  0. -1.  0. -0.  0.  0.  0.  0.  0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+ 2.  0. -1.  0. -1.  0. -0.  0.  0.  0.  0.  0.
+ 2.  0. -1.  0. -1.  0. -0.  0.  0.  0.  0.  0.
+ 1.  0.  1.  0.  1.  0. -1.  0. -1.  0. -1.  0.
+ 2.  0. -1.  0. -1.  0.  0.  0.  0.  0. -0.  0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+ 1.  0.  1.  0.  1.  0. -1.  0. -1.  0. -1.  0.
+ 1.  0.  1.  0.  1.  0. -1.  0. -1.  0. -1.  0.
+ 2.  0. -1.  0. -1.  0.  0.  0. -0.  0. -0.  0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+ 2.  0. -1.  0. -1.  0. -0.  0.  0.  0. -0.  0.
+ 2.  0. -1.  0. -1.  0.  0.  0.  0.  0.  0.  0.
+ 2.  0. -1.  0. -1.  0.  0.  0. -0.  0. -0.  0.
+ 1.  0.  1.  0.  1.  0. -1.  0. -1.  0. -1.  0.
+ 2.  0. -1.  0. -1.  0. -0.  0.  0.  0.  0.  0.
+ 2.  0. -1.  0. -1.  0. -0.  0. -0.  0. -0.  0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+ 1.  0.  1.  0.  1.  0. -1.  0. -1.  0. -1.  0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+ 1.  0.  1.  0.  1.  0. -1.  0. -1.  0. -1.  0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+ 2.  0. -1.  0. -1.  0.  0.  0. -0.  0. -0.  0.
+ 2.  0. -1.  0. -1.  0. -0.  0.  0.  0. -0.  0.
+ 1.  0.  1.  0.  1.  0. -1.  0. -1.  0. -1.  0.
+ 2.  0. -1.  0. -1.  0.  0.  0.  0.  0. -0.  0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+ 2.  0. -1.  0. -1.  0.  0.  0.  0.  0. -0.  0.
+ 2.  0. -1.  0. -1.  0.  0.  0. -0.  0. -0.  0.
+ 2.  0. -1.  0. -1.  0.  0.  0.  0.  0.  0.  0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+ 1.  0.  1.  0.  1.  0. -1.  0. -1.  0. -1.  0.
+ 2.  0. -1.  0. -1.  0.  0.  0.  0.  0.  0.  0.
+ 2.  0. -1.  0. -1.  0.  0.  0. -0.  0.  0.  0.
+ 1.  0.  1.  0.  1.  0. -1.  0. -1.  0. -1.  0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+ 2.  0. -1.  0. -1.  0.  0.  0. -0.  0.  0.  0.
+ 2.  0. -1.  0. -1.  0. -0.  0.  0.  0. -0.  0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+ 2.  0. -1.  0. -1.  0. -0.  0.  0.  0.  0.  0.
+ 2.  0. -1.  0. -1.  0.  0.  0. -0.  0. -0.  0.
+ 1.  0.  1.  0.  1.  0. -1.  0. -1.  0. -1.  0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+ 2.  0. -1.  0. -1.  0.  0.  0. -0.  0. -0.  0.
+ 2.  0. -1.  0. -1.  0.  0.  0.  0.  0. -0.  0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+ 1.  0.  1.  0.  1.  0. -1.  0. -1.  0. -1.  0.
+ 2.  0. -1.  0. -1.  0. -0.  0. -0.  0. -0.  0.
+ 2.  0. -1.  0. -1.  0. -0.  0.  0.  0.  0.  0.
+ 2.  0. -1.  0. -1.  0. -0.  0.  0.  0. -0.  0.
+ 2.  0. -1.  0. -1.  0. -0.  0. -0.  0.  0.  0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+ 2.  0. -1.  0. -1.  0.  0.  0.  0.  0. -0.  0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+ 1.  0.  1.  0.  1.  0. -1.  0. -1.  0. -1.  0.
+ 2.  0. -1.  0. -1.  0.  0.  0.  0.  0.  0.  0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0.
+ 2.  0. -1.  0. -1.  0.  0.  0. -0.  0. -0.  0.
+1. 0. 1. 0. 1. 0. 1. 0. 1. 0. 1. 0."""
+
 chars_Pbar3m1 = """ 2.  0. -2.  0. -1.  0.  1.  0. -1.  0.  1.  0. -0.  0.  0.  0.  0.  0. -0.  0.  0.  0. -0.  0.
  1.  0. -1.  0.  1.  0. -1.  0.  1.  0. -1.  0. -1.  0.  1.  0. -1.  0.  1.  0. -1.  0.  1.  0.
  2.  0.  2.  0. -1.  0. -1.  0. -1.  0. -1.  0. -0.  0. -0.  0.  0.  0.  0.  0.  0.  0.  0.  0.
@@ -670,9 +739,10 @@ def test_pt03_P2():
     data = _load_data(chars_P2)
     phonon = _get_phonon("P2", [3, 2, 2], np.eye(3))
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [[0, 0, 0.5]]  # V
+    assert set(phonon.irreps.rotation_symbols) == set(["E", "C2"])
     _check_char_sum(phonon, qpoints)
 
 
@@ -681,9 +751,10 @@ def test_pt04_Pc():
     data = _load_data(chars_Pc)
     phonon = _get_phonon("Pc", [2, 2, 2], np.eye(3))
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [[0, 0.5, 0]]  # GA
+    assert set(phonon.irreps.rotation_symbols) == set(["E", "sgh"])
     _check_char_sum(phonon, qpoints)
 
 
@@ -692,7 +763,7 @@ def test_pt06_P222_1():
     data = _load_data(chars_P222_1)
     phonon = _get_phonon("P222_1", [2, 2, 1], np.eye(3))
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [
         [0.5, 0, 0],
@@ -703,6 +774,7 @@ def test_pt06_P222_1():
         [0, 0.5, 0.5],
         [0.5, 0.5, 0.5],
     ]  # X, Y, Z, S, U, T, R
+    assert set(phonon.irreps.rotation_symbols) == set(["E", "C2", "C2x", "C2y"])
     _check_char_sum(phonon, qpoints)
 
 
@@ -711,7 +783,7 @@ def test_pt07_Amm2():
     data = _load_data(chars_Amm2)
     phonon = _get_phonon("Amm2", [3, 2, 2], [[1, 0, 0], [0, 0.5, -0.5], [0, 0.5, 0.5]])
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [
         [0, 0, -0.5],
@@ -720,6 +792,7 @@ def test_pt07_Amm2():
         [0, 0.25, -0.25],
         [0.5, 0.25, -0.25],
     ]
+    assert set(phonon.irreps.rotation_symbols) == set(["E", "C2", "sgvyz", "sgvxz"])
     _check_char_sum(phonon, qpoints)
 
 
@@ -728,9 +801,10 @@ def test_pt09_P4_1():
     data = _load_data(chars_P4_1)
     phonon = _get_phonon("P4_1", [2, 2, 1], np.eye(3))
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [[0, 0, 0.5]]
+    assert set(phonon.irreps.rotation_symbols) == set(["E", "C4", "C2", "C4"])
     _check_char_sum(phonon, qpoints)
 
 
@@ -739,13 +813,14 @@ def test_pt10_Pbar4():
     data = _load_data(chars_Pbar4)
     phonon = _get_phonon("P-4", [1, 1, 2], np.eye(3))
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [
         [0, 0, 0.5],
         [0.5, 0.5, 0],
         [0.5, 0.5, 0.5],
     ]  # Z, M, A
+    assert set(phonon.irreps.rotation_symbols) == set(["E", "S4", "C2", "S4"])
     _check_char_sum(phonon, qpoints)
 
 
@@ -756,7 +831,7 @@ def test_pt11_I4_1a():
         "I4_1a", [2, 2, 1], np.array([[-1, 1, 1], [1, -1, 1], [1, 1, -1]]) * 0.5
     )
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [
         [0.5, 0.5, -0.5],
@@ -764,6 +839,9 @@ def test_pt11_I4_1a():
         [0.25, 0.25, 0.25],
         [0, 0.5, 0],
     ]  # M, X, P, N
+    assert set(phonon.irreps.rotation_symbols) == set(
+        ["E", "C4", "C2", "C4", "i", "S4", "sgh", "S4"]
+    )
     _check_char_sum(phonon, qpoints)
 
 
@@ -772,13 +850,16 @@ def test_pt13_P4mm():
     data = _load_data(chars_P4mm)
     phonon = _get_phonon("P4mm", [3, 3, 2], np.eye(3))
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [
         [0, 0, 0.5],
         [0.5, 0.5, 0.5],
         [0, 0.5, 0.5],
     ]  # LD, V, W
+    assert set(phonon.irreps.rotation_symbols) == set(
+        ["E", "C4", "C2", "C4", "sgv", "sgd", "sgv", "sgd"]
+    )
     _check_char_sum(phonon, qpoints)
 
 
@@ -787,7 +868,7 @@ def test_pt14_Pbar42_1m():
     data = _load_data(chars_Pbar42_1m)
     phonon = _get_phonon("P-42_1m", [2, 2, 3], np.eye(3))
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [
         [0.5, 0.5, 0.5],
@@ -796,6 +877,9 @@ def test_pt14_Pbar42_1m():
         [0, 0.5, 0],
         [0, 0.5, 0.5],
     ]  # A, Z, M, X, R
+    assert set(phonon.irreps.rotation_symbols) == set(
+        ["E", "S4", "C2z", "S4", "C2'", "sgd", "C2'", "sgd"]
+    )
     _check_char_sum(phonon, qpoints)
 
 
@@ -804,12 +888,33 @@ def test_pt19_P3m1():
     data = _load_data(chars_P3m1)
     phonon = _get_phonon("P3m1", [4, 4, 2], np.eye(3))
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [
         [0, 0, 0.5],
         [1.0 / 3, 1.0 / 3, 1 / 2],
     ]  # DT, P
+    assert set(phonon.irreps.rotation_symbols) == set(
+        ["E", "C3", "C3", "sgv", "sgv", "sgv"]
+    )
+    _check_char_sum(phonon, qpoints)
+
+
+def test_pt19_P31m():
+    """Test of pt19_P31m."""
+    data = _load_data(chars_P31m)
+    phonon = _get_phonon("P31m", [1, 1, 3], np.eye(3))
+    phonon.set_irreps([0, 0, 0])
+    chars = phonon.irreps.characters
+    # _show_chars(chars)
+    np.testing.assert_allclose(chars, data, atol=1e-5)
+    qpoints = [
+        [0, 0, 0.5],
+        [1.0 / 3, 1.0 / 3, 1 / 2],
+    ]  # DT, P
+    assert set(phonon.irreps.rotation_symbols) == set(
+        ["E", "C3", "C3", "sgv", "sgv", "sgv"]
+    )
     _check_char_sum(phonon, qpoints)
 
 
@@ -818,7 +923,7 @@ def test_pt20_Pbar3m1():
     data = _load_data(chars_Pbar3m1)
     phonon = _get_phonon("P-3m1", [3, 3, 2], np.eye(3))
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [
         [0, 0, 0.5],
@@ -827,6 +932,9 @@ def test_pt20_Pbar3m1():
         [0.5, 0, 0],
         [0.5, 0, 0.5],
     ]  # A, K, H, M, L
+    assert set(phonon.irreps.rotation_symbols) == set(
+        ["E", "i", "C3", "S6", "C3", "S6", "C2'", "sgd", "C2'", "sgd", "C2'", "sgd"]
+    )
     _check_char_sum(phonon, qpoints)
 
 
@@ -835,12 +943,15 @@ def test_pt21_P6():
     data = _load_data(chars_P6)
     phonon = _get_phonon("P6", [2, 2, 1], np.eye(3))
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [
         [0, 0, 0.5],
         [1.0 / 3, 1.0 / 3, 0.5],
     ]  # DT, H
+    assert set(phonon.irreps.rotation_symbols) == set(
+        ["E", "C6", "C3", "C2", "C3", "C6"]
+    )
     _check_char_sum(phonon, qpoints)
 
 
@@ -849,7 +960,7 @@ def test_pt22_Pbar6():
     data = _load_data(chars_Pbar6)
     phonon = _get_phonon("P-6", [1, 1, 3], np.eye(3))
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [
         [0, 0, 0.5],
@@ -858,6 +969,9 @@ def test_pt22_Pbar6():
         [1.0 / 3, 1.0 / 3, 0],
         [1.0 / 3, 1.0 / 3, 0.5],
     ]  # A, KA, HA, K, H
+    assert set(phonon.irreps.rotation_symbols) == set(
+        ["E", "S3", "C3", "sgh", "C3", "S3"]
+    )
     _check_char_sum(phonon, qpoints)
 
 
@@ -866,7 +980,7 @@ def test_pt24_P6_222():
     data = _load_data(chars_P6_222)
     phonon = _get_phonon("P6_222", [2, 2, 2], np.eye(3))
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [
         [0, 0, 0.5],
@@ -875,6 +989,9 @@ def test_pt24_P6_222():
         [0.5, 0, 0],
         [0.5, 0, 0.5],
     ]  # A, K, H, M, L
+    assert set(phonon.irreps.rotation_symbols) == set(
+        ["E", "C6", "C3", "C2", "C3", "C6", "C2''", "C2'", "C2''", "C2'", "C2''", "C2'"]
+    )
     _check_char_sum(phonon, qpoints)
 
 
@@ -883,13 +1000,16 @@ def test_pt26_Pbar6m2():
     data = _load_data(chars_Pbar6m2)
     phonon = _get_phonon("P-6m2", [2, 2, 3], np.eye(3))
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [
         [0, 0, 0.5],
         [1.0 / 3, 1.0 / 3, 0],
         [1.0 / 3, 1.0 / 3, 0.5],
     ]  # A, K, H
+    assert set(phonon.irreps.rotation_symbols) == set(
+        ["E", "S3", "C3", "sgh", "C3", "S3", "C'2", "sgv", "C'2", "sgv", "C'2", "sgv"]
+    )
     _check_char_sum(phonon, qpoints)
 
 
@@ -898,13 +1018,16 @@ def test_pt28_P2_13():
     data = _load_data(chars_P2_13)
     phonon = _get_phonon("P2_13", [2, 2, 2], np.eye(3))
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [
         [0.5, 0.5, 0.5],
         [0.5, 0.5, 0],
         [0, 0.5, 0],
     ]  # R, M, X
+    assert set(phonon.irreps.rotation_symbols) == set(
+        ["E", "C2", "C2", "C2", "C3", "C3", "C3", "C3", "C3", "C3", "C3", "C3"]
+    )
     _check_char_sum(phonon, qpoints)
 
 
@@ -913,13 +1036,41 @@ def test_pt29_Pabar3():
     data = _load_data(chars_Pabar3)
     phonon = _get_phonon("Pa-3", [2, 2, 2], np.eye(3))
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [
         [0.5, 0.5, 0.5],
         [0.5, 0.5, 0],
         [0, 0.5, 0],
     ]  # R, M, X
+    assert set(phonon.irreps.rotation_symbols) == set(
+        [
+            "E",
+            "i",
+            "C2",
+            "sgh",
+            "C2",
+            "sgh",
+            "C2",
+            "sgh",
+            "C3",
+            "S6",
+            "C3",
+            "S6",
+            "C3",
+            "S6",
+            "C3",
+            "S6",
+            "C3",
+            "S6",
+            "C3",
+            "S6",
+            "C3",
+            "S6",
+            "C3",
+            "S6",
+        ]
+    )
     _check_char_sum(phonon, qpoints)
 
 
@@ -928,13 +1079,41 @@ def test_pt30_P4_332():
     data = _load_data(chars_P4_332)
     phonon = _get_phonon("P4_332", [1, 1, 1], np.eye(3))
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [
         [0.5, 0.5, 0.5],
         [0.5, 0.5, 0],
         [0, 0.5, 0],
     ]  # R, M, X
+    assert set(phonon.irreps.rotation_symbols) == set(
+        [
+            "E",
+            "C4",
+            "C2",
+            "C4",
+            "C2",
+            "C2'",
+            "C2",
+            "C2'",
+            "C3",
+            "C2'",
+            "C3",
+            "C4",
+            "C3",
+            "C2'",
+            "C3",
+            "C4",
+            "C3",
+            "C4",
+            "C3",
+            "C2'",
+            "C3",
+            "C2'",
+            "C3",
+            "C4",
+        ]
+    )
     _check_char_sum(phonon, qpoints)
 
 
@@ -943,13 +1122,41 @@ def test_pt31_Pbar43m():
     data = _load_data(chars_Pbar43m)
     phonon = _get_phonon("P-43m", [2, 2, 2], np.eye(3))
     phonon.set_irreps([0, 0, 0])
-    chars = phonon.get_irreps().characters
+    chars = phonon.irreps.characters
     np.testing.assert_allclose(chars, data, atol=1e-5)
     qpoints = [
         [0.5, 0.5, 0.5],
         [0.5, 0.5, 0],
         [0, 0.5, 0],
     ]  # R, M, X
+    assert set(phonon.irreps.rotation_symbols) == set(
+        [
+            "E",
+            "S4",
+            "C2",
+            "S4",
+            "C2",
+            "sgd",
+            "C2",
+            "sgd",
+            "C3",
+            "sgd",
+            "C3",
+            "S4",
+            "C3",
+            "sgd",
+            "C3",
+            "S4",
+            "C3",
+            "S4",
+            "C3",
+            "sgd",
+            "C3",
+            "sgd",
+            "C3",
+            "S4",
+        ]
+    )
     _check_char_sum(phonon, qpoints)
 
 
@@ -979,16 +1186,16 @@ def _load_data(data_str):
     return data
 
 
-def _check_char_sum(phonon: Phonopy, qpoints: List):
+def _check_char_sum(phonon: Phonopy, qpoints: list):
     print("space-group number:", phonon.symmetry.dataset["number"])
 
     for q in qpoints:
         phonon.set_irreps(q)
-        print(phonon.get_irreps().qpoint, end="")
-        order = len(phonon.get_irreps().conventional_rotations)
+        print(phonon.irreps.qpoint, end="")
+        order = len(phonon.irreps.conventional_rotations)
         char_sums = []
         for i, (irreps, chars) in enumerate(
-            zip(phonon.get_irreps().irreps, phonon.get_irreps().characters)
+            zip(phonon.irreps.irreps, phonon.irreps.characters)
         ):
             char_sum = 0
             for irrep, char in zip(irreps, chars):
@@ -1006,7 +1213,7 @@ def _check_char_sum(phonon: Phonopy, qpoints: List):
         if char_sums:  # Can be empty due to physically irreducible irreps.
             np.testing.assert_allclose(char_sums, order, atol=1e-5)
 
-        if len(char_sums) < len(phonon.get_irreps().irreps):
+        if len(char_sums) < len(phonon.irreps.irreps):
             print("  ** Physically irreps may exist. **")
         else:
             print()

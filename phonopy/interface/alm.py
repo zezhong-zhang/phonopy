@@ -1,4 +1,5 @@
-"""ALM force constants interface."""
+"""ALM force constants calculator interface."""
+
 # Copyright (C) 2018 Atsushi Togo
 # All rights reserved.
 #
@@ -33,19 +34,26 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import annotations
+
 import sys
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
 
+from phonopy.structure.atoms import PhonopyAtoms
+from phonopy.structure.cells import Primitive
+
 
 def get_fc2(
-    supercell,
-    primitive,
-    displacements,
-    forces,
-    atom_list=None,
-    options=None,
-    log_level=0,
+    supercell: PhonopyAtoms,
+    primitive: Primitive,
+    displacements: np.ndarray,
+    forces: np.ndarray,
+    atom_list: Optional[Union[Sequence[int], np.ndarray]] = None,
+    options: Optional[str] = None,
+    log_level: int = 0,
 ):
     """Calculate fc2 using ALM."""
     p2s_map = primitive.p2s_map
@@ -68,14 +76,14 @@ def get_fc2(
 
 
 def run_alm(
-    supercell,
-    primitive,
-    displacements,
-    forces,
-    maxorder,
-    is_compact_fc=False,
-    options=None,
-    log_level=0,
+    supercell: PhonopyAtoms,
+    primitive: Primitive,
+    displacements: np.ndarray,
+    forces: np.ndarray,
+    maxorder: int,
+    is_compact_fc: bool = False,
+    options: Optional[str] = None,
+    log_level: int = 0,
 ):
     """Calculate force constants of arbitrary-order using ALM."""
     fcs = None  # This is returned.
@@ -115,6 +123,9 @@ def run_alm(
     if alm_options["cutoff"] is not None:
         if len(alm_options["cutoff"]) == 1:
             cutoff_radii[:] = alm_options["cutoff"][0]
+        elif len(alm_options["cutoff"]) == _maxorder:
+            for i, cutoff in enumerate(alm_options["cutoff"]):
+                cutoff_radii[i] = cutoff
         elif np.prod(shape) == len(alm_options["cutoff"]):
             cutoff_radii[:] = np.reshape(alm_options["cutoff"], shape)
         else:
@@ -144,8 +155,8 @@ def run_alm(
 
     try:
         from alm import ALM, optimizer_control_data_types
-    except ImportError:
-        raise ImportError("ALM python module was not found.")
+    except ImportError as exc:
+        raise ModuleNotFoundError("ALM python module was not found.") from exc
 
     with ALM(lattice, positions, numbers) as alm:
         if log_level > 0:
@@ -223,8 +234,8 @@ def _update_options(fc_calculator_options):
     """
     try:
         from alm import optimizer_control_data_types
-    except ImportError:
-        raise ImportError("ALM python module was not found.")
+    except ImportError as exc:
+        raise ModuleNotFoundError("ALM python module was not found.") from exc
 
     # Default settings.
     alm_options = {
@@ -261,7 +272,7 @@ def _update_options(fc_calculator_options):
                     option_value = np.array(
                         [float(x) for x in val.split()], dtype="double"
                     )
-                elif alm_option_types[key.lower()] is np.intc:
+                elif alm_option_types[key.lower()] is np.int_:
                     option_value = np.array([int(x) for x in val.split()], dtype="int_")
                 else:
                     option_value = alm_option_types[key.lower()](val)

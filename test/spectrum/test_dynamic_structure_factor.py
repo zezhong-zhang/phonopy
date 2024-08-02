@@ -1,4 +1,5 @@
 """Tests for dynamic structure factor."""
+
 import numpy as np
 
 from phonopy.spectrum.dynamic_structure_factor import atomic_form_factor_WK1995
@@ -261,5 +262,5 @@ def _run(
             else:
                 raise SyntaxError
             dsf = phonon.dynamic_structure_factor
-            for i, S in enumerate(dsf):
+            for _, _ in enumerate(dsf):
                 pass

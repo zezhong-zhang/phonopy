@@ -1,4 +1,5 @@
 """Phonon calculation on sampling mesh."""
+
 # Copyright (C) 2011 Atsushi Togo
 # All rights reserved.
 #
@@ -37,7 +38,10 @@ import warnings
 
 import numpy as np
 
-from phonopy.harmonic.dynamical_matrix import DynamicalMatrix
+from phonopy.harmonic.dynamical_matrix import (
+    DynamicalMatrix,
+    run_dynamical_matrix_solver_c,
+)
 from phonopy.structure.grid_points import GridPoints
 from phonopy.units import VaspToTHz
 
@@ -123,6 +127,7 @@ class MeshBase:
         warnings.warn(
             "MeshBase.get_mesh_numbers() is deprecated. Use mesh_numbers attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.mesh_numbers
 
@@ -136,6 +141,7 @@ class MeshBase:
         warnings.warn(
             "MeshBase.get_qpoints() is deprecated. Use qpoints attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.qpoints
 
@@ -149,6 +155,7 @@ class MeshBase:
         warnings.warn(
             "MeshBase.get_weights()) is deprecated. Use weights attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.weights
 
@@ -162,6 +169,7 @@ class MeshBase:
         warnings.warn(
             "MeshBase.get_grid_address()) is deprecated. Use grid_address attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.grid_address
 
@@ -176,6 +184,7 @@ class MeshBase:
             "MeshBase.get_ir_grid_points() is deprecated. "
             "Use ir_grid_points attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.ir_grid_points
 
@@ -190,6 +199,7 @@ class MeshBase:
             "MeshBase.get_grid_mapping_table() is deprecated. "
             "Use grid_mapping_table attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.grid_mapping_table
 
@@ -204,6 +214,7 @@ class MeshBase:
             "MeshBase.get_dynamical_matrix() is deprecated. "
             "Use dynamical_matrix attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.dynamical_matrix
 
@@ -252,7 +263,6 @@ class Mesh(MeshBase):
         group_velocity=None,
         rotations=None,  # Point group operations in real space
         factor=VaspToTHz,
-        use_lapack_solver=False,
     ):
         """Init method."""
         super().__init__(
@@ -269,7 +279,6 @@ class Mesh(MeshBase):
 
         self._group_velocity = group_velocity
         self._group_velocities = None
-        self._use_lapack_solver = use_lapack_solver
 
     def __iter__(self):
         """Define iterator over q-points.
@@ -314,6 +323,7 @@ class Mesh(MeshBase):
         warnings.warn(
             "Mesh.get_frequencies() is deprecated. " "Use frequencies attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.frequencies
 
@@ -339,6 +349,7 @@ class Mesh(MeshBase):
         warnings.warn(
             "Mesh.get_eigenvectors() is deprecated. " "Use eigenvectors attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.eigenvectors
 
@@ -355,6 +366,7 @@ class Mesh(MeshBase):
             "Mesh.get_group_velocities() is deprecated. "
             "Use group_velocities attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.group_velocities
 
@@ -425,13 +437,20 @@ class Mesh(MeshBase):
             w.write("\n".join(lines))
 
     def _set_phonon(self):
+        import phonopy._phonopy as phonoc
+
         num_band = len(self._cell) * 3
         num_qpoints = len(self._qpoints)
 
         self._frequencies = np.zeros((num_qpoints, num_band), dtype="double")
-        if self._with_eigenvectors or self._use_lapack_solver:
+        if phonoc.use_openmp():
+            dynmat = run_dynamical_matrix_solver_c(
+                self._dynamical_matrix, self._qpoints
+            )
+            eigenvectors = dynmat
+        elif self._with_eigenvectors:
             dtype = "c%d" % (np.dtype("double").itemsize * 2)
-            self._eigenvectors = np.zeros(
+            eigenvectors = np.zeros(
                 (
                     num_qpoints,
                     num_band,
@@ -441,35 +460,28 @@ class Mesh(MeshBase):
                 order="C",
             )
 
-        if self._use_lapack_solver:
-            from phono3py.phonon.solver import get_phonons_at_qpoints
-
-            get_phonons_at_qpoints(
-                self._frequencies,
-                self._eigenvectors,
-                self._dynamical_matrix,
-                self._qpoints,
-                self._factor,
-                nac_q_direction=None,
-                lapack_zheev_uplo="L",
-            )
-        else:
-            for i, q in enumerate(self._qpoints):
+        for i, q in enumerate(self._qpoints):
+            if phonoc.use_openmp():
+                dm = dynmat[i]
+            else:
                 self._dynamical_matrix.run(q)
                 dm = self._dynamical_matrix.dynamical_matrix
-                if self._with_eigenvectors:
-                    eigvals, self._eigenvectors[i] = np.linalg.eigh(dm)
-                    eigenvalues = eigvals.real
-                else:
-                    eigenvalues = np.linalg.eigvalsh(dm).real
-                self._frequencies[i] = (
-                    np.array(
-                        np.sqrt(abs(eigenvalues)) * np.sign(eigenvalues),
-                        dtype="double",
-                        order="C",
-                    )
-                    * self._factor
+            if self._with_eigenvectors:
+                eigvals, eigenvectors[i] = np.linalg.eigh(dm)
+                eigenvalues = eigvals.real
+            else:
+                eigenvalues = np.linalg.eigvalsh(dm).real
+            self._frequencies[i] = (
+                np.array(
+                    np.sqrt(abs(eigenvalues)) * np.sign(eigenvalues),
+                    dtype="double",
+                    order="C",
                 )
+                * self._factor
+            )
+
+        if self._with_eigenvectors:
+            self._eigenvectors = eigenvectors
 
     def _set_group_velocities(self, group_velocity):
         group_velocity.run(self._qpoints)

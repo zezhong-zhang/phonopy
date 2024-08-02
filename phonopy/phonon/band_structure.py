@@ -34,15 +34,19 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import annotations
+
 import gzip
+import lzma
 import sys
 import warnings
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 import yaml
 
 from phonopy.harmonic.dynamical_matrix import DynamicalMatrix, DynamicalMatrixNAC
+from phonopy.phonon.group_velocity import GroupVelocity
 from phonopy.units import VaspToTHz
 
 
@@ -237,15 +241,15 @@ class BandStructure:
 
     def __init__(
         self,
-        paths,
+        paths: list,
         dynamical_matrix: Union[DynamicalMatrix, DynamicalMatrixNAC],
-        with_eigenvectors=False,
-        is_band_connection=False,
-        group_velocity=None,
-        path_connections=None,
-        labels=None,
-        is_legacy_plot=False,
-        factor=VaspToTHz,
+        with_eigenvectors: bool = False,
+        is_band_connection: bool = False,
+        group_velocity: Optional[GroupVelocity] = None,
+        path_connections: Optional[Union[list, bool]] = None,
+        labels: Optional[list[str]] = None,
+        is_legacy_plot: bool = False,
+        factor: float = VaspToTHz,
     ):
         """Init method.
 
@@ -318,7 +322,7 @@ class BandStructure:
         self._set_band()
 
     @property
-    def distances(self):
+    def distances(self) -> list:
         """Return distances of band segments."""
         return self._distances
 
@@ -328,11 +332,12 @@ class BandStructure:
             "BandStructure.get_distances() is deprecated."
             "Use BandStructure.distances attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.distances
 
     @property
-    def qpoints(self):
+    def qpoints(self) -> list:
         """Return qpoints of band segments."""
         return self._paths
 
@@ -342,11 +347,12 @@ class BandStructure:
             "BandStructure.get_qpoints() is deprecated."
             "Use BandStructure.qpoints attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.qpoints
 
     @property
-    def eigenvectors(self):
+    def eigenvectors(self) -> Optional[list]:
         """Return phonon eigenvectors of band segments."""
         return self._eigenvectors
 
@@ -356,11 +362,12 @@ class BandStructure:
             "BandStructure.get_eigenvectors() is deprecated."
             "Use BandStructure.eigenvectors attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.eigenvectors
 
     @property
-    def frequencies(self):
+    def frequencies(self) -> Optional[list]:
         """Return phonon frequencies of band segments."""
         return self._frequencies
 
@@ -370,11 +377,12 @@ class BandStructure:
             "BandStructure.get_frequencies() is deprecated."
             "Use BandStructure.frequencies attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.frequencies
 
     @property
-    def group_velocities(self):
+    def group_velocities(self) -> Optional[list]:
         """Return phonon group velocities of band segments."""
         return self._group_velocities
 
@@ -384,13 +392,16 @@ class BandStructure:
             "BandStructure.get_group_velocities() is deprecated."
             "Use BandStructure.group_velocities attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.group_velocities
 
     def get_eigenvalues(self):
         """Return phonon eigenvalues of band segments."""
         warnings.warn(
-            "Bandstructure.get_engenvalues is deprecated.", DeprecationWarning
+            "Bandstructure.get_engenvalues is deprecated.",
+            DeprecationWarning,
+            stacklevel=2,
         )
         return self._eigenvalues
 
@@ -399,11 +410,12 @@ class BandStructure:
         warnings.warn(
             "Bandstructure.get_unit_conversion_factor is deprecated.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self._factor
 
     @property
-    def labels(self):
+    def labels(self) -> Optional[list]:
         """Return special point symbols."""
         return self._labels
 
@@ -413,7 +425,7 @@ class BandStructure:
         return self._path_connections
 
     @property
-    def is_legacy_plot(self):
+    def is_legacy_plot(self) -> bool:
         """Identify legacy plot or not."""
         return self._is_legacy_plot
 
@@ -539,13 +551,6 @@ class BandStructure:
             with gzip.open(_filename, "wb") as w:
                 self._write_yaml(w, comment, is_binary=True)
         elif compression == "lzma":
-            try:
-                import lzma
-            except ImportError:
-                raise (
-                    "Reading a lzma compressed file is not supported "
-                    "by this python version."
-                )
             if filename is None:
                 _filename = "band.yaml.xz"
             with lzma.open(_filename, "w") as w:
@@ -699,7 +704,6 @@ class BandStructure:
         self._set_frequencies()
 
     def _solve_dm_on_path(self, path):
-        is_nac = self._dynamical_matrix.is_nac()
         distances_on_path = []
         eigvals_on_path = []
         eigvecs_on_path = []
@@ -710,14 +714,21 @@ class BandStructure:
             self._group_velocity.run(path)
             gv = self._group_velocity.group_velocities
 
+        if isinstance(self._dynamical_matrix, DynamicalMatrixNAC):
+            q_direction = None
+            # A cross product close to 0 indicates a path crossing or ending at Gamma
+            rec_lat = np.linalg.inv(self._dynamical_matrix.primitive.cell)
+            dist_from_Gamma = np.linalg.norm(
+                np.cross(rec_lat @ path[0], rec_lat @ path[-1])
+            )
+            if dist_from_Gamma < DynamicalMatrixNAC.Q_DIRECTION_TOLERANCE:
+                q_direction = path[0] - path[-1]
+
         for i, q in enumerate(path):
             self._shift_point(q)
             distances_on_path.append(self._distance)
 
-            if is_nac:
-                q_direction = None
-                if (np.abs(q) < 0.0001).all():  # For Gamma point
-                    q_direction = path[0] - path[-1]
+            if isinstance(self._dynamical_matrix, DynamicalMatrixNAC):
                 self._dynamical_matrix.run(q, q_direction=q_direction)
             else:
                 self._dynamical_matrix.run(q)
@@ -867,8 +878,8 @@ def get_band_qpoints_by_seekpath(primitive, npoints, is_const_interval=False):
     """
     try:
         import seekpath
-    except ImportError:
-        raise ImportError("You need to install seekpath.")
+    except ImportError as exc:
+        raise ModuleNotFoundError("You need to install seekpath.") from exc
 
     band_path = seekpath.get_path(primitive.totuple())
     point_coords = band_path["point_coords"]
@@ -971,16 +982,16 @@ def _get_labels(pairs_of_symbols):
     path_connections.append(False)
     labels += list(pairs_of_symbols[-1])
 
-    for i, l in enumerate(labels):
-        if "GAMMA" in l:
-            labels[i] = "$" + l.replace("GAMMA", r"\Gamma") + "$"
-        elif "SIGMA" in l:
-            labels[i] = "$" + l.replace("SIGMA", r"\Sigma") + "$"
-        elif "DELTA" in l:
-            labels[i] = "$" + l.replace("DELTA", r"\Delta") + "$"
-        elif "LAMBDA" in l:
-            labels[i] = "$" + l.replace("LAMBDA", r"\Lambda") + "$"
+    for i, ll in enumerate(labels):
+        if "GAMMA" in ll:
+            labels[i] = "$" + ll.replace("GAMMA", r"\Gamma") + "$"
+        elif "SIGMA" in ll:
+            labels[i] = "$" + ll.replace("SIGMA", r"\Sigma") + "$"
+        elif "DELTA" in ll:
+            labels[i] = "$" + ll.replace("DELTA", r"\Delta") + "$"
+        elif "LAMBDA" in ll:
+            labels[i] = "$" + ll.replace("LAMBDA", r"\Lambda") + "$"
         else:
-            labels[i] = r"$\mathrm{%s}$" % l
+            labels[i] = r"$\mathrm{%s}$" % ll
 
     return labels, path_connections

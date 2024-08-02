@@ -2,7 +2,7 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.3.0
+  rev: v4.6.0
   hooks:
   - id: trailing-whitespace
   - id: end-of-file-fixer
@@ -10,44 +10,15 @@ repos:
     exclude: ^conda/
   - id: check-added-large-files
 
-- repo: https://github.com/pycqa/flake8
-  rev: 5.0.4
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.5.5
   hooks:
-  - id: flake8
-    exclude: |
-      (?x)^(
-      test/phonon/test_irreps.py|
-      test/qha/test_electron.py|
-      phonopy/interface/cp2k.py
-      )$
-    args:
-    - "--max-line-length=88"
-    - "--ignore=E203,W503"
-  - id: flake8
-    files: |
-      (?x)^(
-      test/phonon/test_irreps.py|
-      test/qha/test_electron.py|
-      phonopy/interface/cp2k.py
-      )$
-    args:
-    - "--max-line-length=88"
-    - "--ignore=E203,W503,E501"
+  - id: ruff
+    args: [ "--fix", "--show-fixes" ]
+  - id: ruff-format
 
-- repo: https://github.com/psf/black
-  rev: 22.6.0
+- repo: https://github.com/cheshirekow/cmake-format-precommit
+  rev: v0.6.13
   hooks:
-  - id: black
-    args:
-    - --line-length=88
-
-- repo: https://github.com/pycqa/pydocstyle
-  rev: 6.1.1
-  hooks:
-  - id: pydocstyle
-
-- repo: https://github.com/pycqa/isort
-  rev: 5.10.1
-  hooks:
-    - id: isort
-      name: isort (python)
+  - id: cmake-format
+  - id: cmake-lint

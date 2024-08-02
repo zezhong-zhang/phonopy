@@ -2,6 +2,148 @@
 
 # Change Log
 
+## Jul-16-2024: Version 2.26.6
+
+- Fix derivative of dynamical matrix for Wang's NAC method.
+
+## Jul-14-2024: Version 2.26.5
+
+- Refactoring of dynamical matrix code.
+
+## Jul-13-2024: Version 2.26.4
+
+- Collection of minor updates to follow updates of external libraries.
+
+## Jul-9-2024: Version 2.26.3
+
+- Fix #388 for `phonoc.omp_max_threads()`
+
+## Jul-7-2024: Version 2.26.2
+
+- Enable to use `PHONOPY_USE_OMP=OFF` environment variable to deactivate
+  building with OpenMP.
+
+## Jul-7-2024: Version 2.26.1
+
+- Update for conda-forge build.
+
+## Jul-5-2024: Version 2.26.0
+
+- Build system of phonopy was renewed. Now nanobind, cmake, and
+  scikit-build-core are used for the building, and the receipt is written in
+  `CMakeLists.txt` and `pyproject.toml`.
+
+## Jun-29-2024: Version 2.25.0
+
+- Migration to ruff.
+- Experimental implementation for using pypolymlp.
+
+## Jun-19-2024: Version 2.24.3
+
+- Treatment for running with numpy 2.0.
+
+## Jun-8-2024: Version 2.24.2
+
+- Experimental support of force constants calculator option `--symfc`
+  (`FC_CALCULATOR = SYMFC`). Symfc can be installed via conda-force or pip.
+
+## Jun-7-2024: Version 2.24.1
+
+- Fix bug in phonopy-yaml dumper for type2 dataset.
+
+## Jun-7-2024: Version 2.24.0
+
+- Change of phonopy-yaml format for type2 dataset.
+
+## May-3-2024: Version 2.23.1
+
+- Release for creating conda-forge package.
+
+## May-1-2024: Version 2.23.0
+
+- Maintenance release.
+- Supercell energy can be included in phonopy-yaml format.
+- Added {ref}`save_params_option`. By this option, `phonopy_params.yaml` file is
+  created. This file is readily used by phonopy-load.
+
+## Mar-29-2024: Version 2.22.1
+
+- Update spglib depndency >= 2.3.
+- Experimental support of non-collinear-like magnetic moments activated using
+  `MAGMOM` tag or `--magmom` options. The values are defined by a `(number of
+  atoms, 3)` array for API, but specified with a 1D flattened list from the
+  command user interface. At least it is expected to work with the VASP
+  interface, but each specific calculator interface may not support it.
+
+## Mar-19-2024: Version 2.22.0
+
+- Maintenance release.
+
+## Feb-18-2024: Version 2.21.2
+
+- Fix `phonopy-load`.
+
+## Feb-14-2024: Version 2.21.1
+
+- `np.random.randn` is replaced by `np.random.Generator.standard_normal`. Note
+  that by this chang, random seed became incompatible.
+- Some bug fixes.
+
+## Dec-4-2023: Version 2.21.0
+
+- Maintenance release.
+
+## Jul-2-2023: Version 2.20.0
+
+- Drop python 3.7 support
+
+## May-12-2023: Version 2.19.1
+
+- Improvement of parsing forces of the built-in LAMMPS interface.
+- Update of the ABACUS interface.
+- Changed `--symmetry` option to write also `phonopy_symcells.yaml`.
+
+## May-12-2023: Version 2.19.0
+
+- Experimental release of built-in LAMMPS interface.
+
+## Mar-30-2023: Version 2.18.0
+
+- Maintenance release. Refactoring of `PhonopyYaml` class.
+
+## Mar-6-2023: Version 2.17.2
+
+- Bug fixes of user interface.
+
+## Dec-29-2022: Version 2.17.1
+
+- Maintenance release.
+
+## Dec-8-2022: Version 2.17.0
+
+- `RANDOM_DISPLACEMENT_TEMPERATURE` tag (`--rd-temperature` option) is
+  implemented. This enables, from command line interface, to generate random
+  displacements at finite temperature randomly sampling harmonic oscillator
+  distribution functions of phonons at commensurate points. This requires input
+  that can run phonon calculation such as force constants and displacement-force
+  dataset.
+
+## Oct-5-2022: Version 2.16.3
+
+- Fix CMakeLists.txt.
+
+## Spe-19-2022: Version 2.16.2
+
+- Update again for conda-forge packaging.
+
+## Spe-18-2022: Version 2.16.1
+
+- Update for conda-forge packaging.
+
+## Spe-18-2022: Version 2.16.0
+
+- Maintenance release including small bug fixes.
+
 ## May-28-2022: Version 2.15.1
 
 - Bug fix when creating `FORCE_SETS` from `phonopy_disp.yaml` without specifying
@@ -200,7 +342,7 @@
   Possible usages are:
 
   - For PhononDB at Kyoto-U
-    (http://phonondb.mtl.kyoto-u.ac.jp/ph20180417/index.html) raw data, phonons
+    (<http://phonondb.mtl.kyoto-u.ac.jp/ph20180417/index.html>) raw data, phonons
     are easily calculated, e.g., by
     `% phonopy -c phonon.yaml --band auto --mesh 100 -p`.
   - If `phonopy_params.yaml` is created using API of `phonopy.save()`
@@ -290,7 +432,7 @@
   - Convenient Phonopy instance loader and crystal structure yaml parser
     (`phonopy.load()` and `phonopy.read_cell_yaml()`).
   - Automatic band paths generation using SeeKpath
-    (https://seekpath.readthedocs.io/) (`BAND = AUTO`). Installation of SeekPath
+    (<https://seekpath.readthedocs.io/>) (`BAND = AUTO`). Installation of SeekPath
     is needed.
 
 ## Nov-17-2018: Version 1.14.0
@@ -893,7 +1035,7 @@ document is correct.
 ## Sep-22-2010: Version 0.9.1.4
 
 - The new tag `ANIME_TYPE` supports `xyz` and `xyz_jmol` formats by Jörg Meyer
-  and Christian Carbogno, and also `A set of `POSCAR` files corresponding to
+  and Christian Carbogno, and also `A set of`POSCAR` files corresponding to
   animation frames.
 
 - Fix bugs in `trim_cell` and `Primitive.__supercell_to_primitive_map` in

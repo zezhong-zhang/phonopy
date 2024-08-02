@@ -1,4 +1,5 @@
 """Equation of states and fitting routine."""
+
 # Copyright (C) 2012 Atsushi Togo
 # All rights reserved.
 #
@@ -32,6 +33,8 @@
 # LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
+
+import warnings
 
 import numpy as np
 
@@ -80,11 +83,7 @@ def get_eos(eos):
         x = (v / p[3]) ** (1.0 / 3)
         xi = 3.0 / 2 * (p[2] - 1)
         return p[0] + (
-            9
-            * p[1]
-            * p[3]
-            / (xi**2)
-            * (1 + (xi * (1 - x) - 1) * np.exp(xi * (1 - x)))
+            9 * p[1] * p[3] / (xi**2) * (1 + (xi * (1 - x) - 1) * np.exp(xi * (1 - x)))
         )
 
     if eos == "murnaghan":
@@ -125,35 +124,29 @@ class EOSFit:
 
     def fit(self, initial_parameters):
         """Fit."""
-        import logging
-        import sys
-        import warnings
-
         try:
             import scipy
             from scipy.optimize import leastsq
-        except ImportError:
-            print("You need to install python-scipy.")
-            sys.exit(1)
+        except ImportError as exc:
+            raise ModuleNotFoundError("You need to install python-scipy.") from exc
 
-        warnings.filterwarnings("error")
+        with warnings.catch_warnings():
+            warnings.filterwarnings("error")
 
-        def residuals(p, eos, v, e):
-            """Return residuals."""
-            return eos(v, *p) - e
+            def residuals(p, eos, v, e):
+                """Return residuals."""
+                return eos(v, *p) - e
 
-        try:
-            result = leastsq(
-                residuals,
-                initial_parameters,
-                args=(self._eos, self._volume, self._energy),
-                full_output=1,
-            )
-        except RuntimeError:
-            logging.exception("Fitting to EOS failed.")
-            raise
-        except (RuntimeWarning, scipy.optimize.optimize.OptimizeWarning):
-            logging.exception("Difficulty in fitting to EOS.")
-            raise
-        else:
-            self.parameters = result[0]
+            try:
+                result = leastsq(
+                    residuals,
+                    initial_parameters,
+                    args=(self._eos, self._volume, self._energy),
+                    full_output=1,
+                )
+            except RuntimeError as exc:
+                raise RuntimeError("Fitting to EOS failed.") from exc
+            except (RuntimeWarning, scipy.optimize.OptimizeWarning) as exc:
+                raise RuntimeError("Met difficulty in fitting to EOS.") from exc
+            else:
+                self.parameters = result[0]

@@ -1,39 +1,51 @@
-name: phonopy using conda
+name: phonopy test using conda-forge environment
 
-on: [push]
+on:
+  push:
+    branches-ignore:
+    - publish-gh-pages
+    - develop
+    - master
+    - rc
+  pull_request:
+    branches: [ develop ]
 
 jobs:
   build-linux:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+    - uses: actions/checkout@v4
+    - uses: conda-incubator/setup-miniconda@v3
       with:
-        python-version: ${{ matrix.python-version }}
-    - name: Add conda to system path
-      run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
-        echo $CONDA/bin >> $GITHUB_PATH
+        miniforge-version: latest
     - name: Install dependencies
       run: |
+        conda activate test
         conda install --yes -c conda-forge python=${{ matrix.python-version }}
-        conda install --yes -c conda-forge gcc_linux-64 gxx_linux-64 matplotlib-base pyyaml scipy numpy spglib h5py pip pytest codecov pytest-cov pytest
-    - name: Install cp2k-input-tools
+        conda install --yes -c conda-forge matplotlib-base pyyaml scipy numpy spglib h5py pip pytest codecov pytest-cov c-compiler cxx-compiler cmake
+    - name: Setup symfc
       run: |
-        pip install cp2k-input-tools
+        conda activate test
+        git clone --depth 1 https://github.com/symfc/symfc.git
+        cd symfc
+        pip install -e . -vvv
+        cd ..
     - name: Setup phonopy
       run: |
-        python setup.py build
-        pip install -e .
+        conda activate test
+        pip install -e . -vvv
     - name: Test with pytest
       run: |
-        pytest --cov=./ --cov-report=xml
+        conda activate test
+        pytest --cov=./ --cov-report=xml test
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
       with:
         verbose: true

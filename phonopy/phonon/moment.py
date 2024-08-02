@@ -1,4 +1,5 @@
 """Calculate phonon state moments."""
+
 # Copyright (C) 2016 Atsushi Togo
 # All rights reserved.
 #
@@ -70,6 +71,7 @@ class PhononMoment:
             "PhononMoment.get_moment() is deprecated. "
             "Use PhononMoment.moment attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.moment
 

@@ -1,4 +1,5 @@
 """Phonon thermal properties at constant volume."""
+
 # Copyright (C) 2011 Atsushi Togo
 # All rights reserved.
 #
@@ -34,9 +35,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import warnings
+from typing import Optional
 
 import numpy as np
 
+from phonopy.phonon.mesh import Mesh
 from phonopy.units import EvTokJmol, Kb, THzToEv
 
 
@@ -145,7 +148,7 @@ class ThermalPropertiesBase:
 
     def __init__(
         self,
-        mesh,
+        mesh: Mesh,
         cutoff_frequency=None,
         pretend_real=False,
         band_indices=None,
@@ -196,6 +199,8 @@ class ThermalPropertiesBase:
         self._num_integrated_modes = np.sum(
             self._weights * (self._frequencies > self._cutoff_frequency).sum(axis=1)
         )
+
+        self._num_formula_units = mesh.dynamical_matrix.primitive.Z
 
         # When self._weights.dtype is 'uint', the number is casted to float.
         # In future version, self._weights.dtype will be 'int_', so this
@@ -311,6 +316,7 @@ class ThermalProperties(ThermalPropertiesBase):
             "ThermalProperties.get_temperatures is deprecated."
             "Use temperatures attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.temperatures
 
@@ -320,6 +326,7 @@ class ThermalProperties(ThermalPropertiesBase):
             "ThermalProperties.set_temperatures is deprecated."
             "Use temperatures attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         self.temperatures = temperatures
 
@@ -344,6 +351,7 @@ class ThermalProperties(ThermalPropertiesBase):
             "ThermalProperties.get_thermal_properties is deprecated."
             "Use thermal_properties attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.thermal_properties
 
@@ -358,6 +366,7 @@ class ThermalProperties(ThermalPropertiesBase):
             "ThermalProperties.get_zero_point_energy is deprecated."
             "Use zero_point_energy attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.zero_point_energy
 
@@ -372,6 +381,7 @@ class ThermalProperties(ThermalPropertiesBase):
             "ThermalProperties.get_number_of_integrated_modes is "
             "deprecated. Use number_of_integrated_modes attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.number_of_integrated_modes
 
@@ -386,6 +396,7 @@ class ThermalProperties(ThermalPropertiesBase):
             "ThermalProperties.get_number_of_modes is "
             "deprecated. Use number_of_modes attribute.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.number_of_modes
 
@@ -416,19 +427,80 @@ class ThermalProperties(ThermalPropertiesBase):
             _t_min, _t_max + _t_step / 2.0, _t_step, dtype="double"
         )
 
-    def plot(self, plt):
-        """Plot thermal properties using matplotlib."""
+    def plot(
+        self,
+        ax,
+        xlabel: Optional[str] = None,
+        ylabel: Optional[str] = None,
+        with_grid: bool = True,
+        divide_by_Z: bool = False,
+        legend_style: Optional[str] = "normal",
+    ):
+        """Plot thermal properties using matplotlib.
+
+        Parameters
+        ----------
+        ax : matplotlib.axes.Axes
+            Single Matplotlib Axes object.
+        xlabel : str, optional
+            Label used for x-axis.
+        ylabel : str, optional
+            Label used for y-axis.
+        with_grid : bool, optional
+            With grid or not. Default is True.
+        divide_by_Z : bool, optional
+            Divide thermal properties by number of formula units of primitive
+            cell. Default is False.
+        legend_style : str, optional
+            "normal", "compact", None. None will not show legend.
+
+        """
+        if xlabel is None:
+            if legend_style == "compact":
+                _xlabel = "Temperature (K)"
+            else:
+                _xlabel = "Temperature [K]"
+        else:
+            _xlabel = xlabel
+
+        if divide_by_Z:
+            z_num = self._num_formula_units
+        else:
+            z_num = 1
+
         temps, fe, entropy, cv = self._thermal_properties
 
-        plt.plot(temps, fe, "r-")
-        plt.plot(temps, entropy, "b-")
-        plt.plot(temps, cv, "g-")
-        plt.legend(
-            ("Free energy [kJ/mol]", "Entropy [J/K/mol]", r"C$_\mathrm{V}$ [J/K/mol]"),
-            loc="best",
-        )
-        plt.grid(True)
-        plt.xlabel("Temperature [K]")
+        ax.plot(temps, fe / z_num, "r-")
+        ax.plot(temps, entropy / z_num, "b-")
+        ax.plot(temps, cv / z_num, "g-")
+
+        if legend_style == "compact":
+            ax.legend(
+                (
+                    "Free energy (kJ/mol)",
+                    "Entropy (J/K/mol)",
+                    r"$C_\mathrm{V}$ (J/K/mol)",
+                ),
+                loc="best",
+                prop={"size": 8.5},
+                frameon=False,
+            )
+        elif legend_style == "normal":
+            ax.legend(
+                (
+                    "Free energy [kJ/mol]",
+                    "Entropy [J/K/mol]",
+                    r"C$_\mathrm{V}$ [J/K/mol]",
+                ),
+                loc="best",
+            )
+
+        ax.grid(with_grid)
+        if not with_grid:
+            ax.axhline(y=0, linestyle=":", linewidth=0.5, color="k")
+        ax.set_xlabel(_xlabel)
+        if ylabel is not None:
+            ax.set_ylabel(ylabel)
 
     def run(self, t_step=None, t_max=None, t_min=None, lang="C"):
         """Run thermal property calculation."""
@@ -438,6 +510,7 @@ class ThermalProperties(ThermalPropertiesBase):
                 "Use 'set_temperature_range' or "
                 "'set_temperature_range' method instead.",
                 DeprecationWarning,
+                stacklevel=2,
             )
             self.set_temperature_range(t_min=t_min, t_max=t_max, t_step=t_step)
 

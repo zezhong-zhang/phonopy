@@ -2,11 +2,6 @@
 
 # Command options
 
-```{contents}
-:depth: 3
-:local:
-```
-
 From phonopy v1.12.2, the command option names with underscores `_` are replaced
 by those with dashes `-`. Those tag names are unchanged.
 
@@ -27,6 +22,8 @@ Some of command-line options are equivalent to respective setting tags:
 - `--dos` (`DOS = .TRUE.`)
 - `--eigvecs`, `--eigenvectors` (`EIGENVECTORS = .TRUE.`)
 - `--factor` (`FREQUENCY_CONVERSION_FACTOR`)
+- `--fc-calc` (`FC_CALCULATOR`)
+- `--fc-calc-opt` (`FC_CALCULATOR_OPTIONS`)
 - `--fc-symmetry` (`FC_SYMMETRY = .TRUE.`)
 - `--fits-debye-model` (`DEBYE_MODEL = .TRUE.`)
 - `--fmax` (`FMAX`)
@@ -44,6 +41,7 @@ Some of command-line options are equivalent to respective setting tags:
 - `--include-disp` (`INCLUDE_DISP = .TRUE.`)
 - `--include-all` (`INCLUDE_ALL = .TRUE.`)
 - `--lcg`, `--little_cogroup` (`LITTLE_COGROUP`)
+- `--magmom` (`MAGMOM`)
 - `--modulation` (`MODULATION`)
 - `--moment` (`MOMENT = .TRUE.`)
 - `--moment_order` (`MOMENT_ORDER`)
@@ -61,11 +59,14 @@ Some of command-line options are equivalent to respective setting tags:
 - `--q-direction` (`Q_DIRECTION`)
 - `--qpoints` (`QPOINTS`)
 - `--qpoints-format` (`QPOINTS_FORMAT`)
+- `--rd` (`RANDOM_DISPLACEMENTS`)
+- `--rd-temperature` (`RANDOM_DISPLACEMENT_TEMPERATURE`)
 - `--readfc` (`READ_FORCE_CONSTANTS = .TRUE.`)
 - `--readfc-format` (`READFC_FORMAT`)
 - `--read-qpoints` (`QPOINTS = .TRUE.`)
 - `--show-irreps` (`SHOW_IRREPS`)
 - `--sigma` (`SIGMA`)
+- `--symfc` (`FC_CALCULATOR = SYMFC`)
 - `-t` (`TPROP`)
 - `--td` (`TDISP`)
 - `--tdm` (`TDISPMAT`)
@@ -265,7 +266,7 @@ calculations.
 
 This is experimental support to generage `FORCE_SETS`. Insted of this, you can
 use the external tool called `scf2forces` to generate `FORCE_SETS`. `scf2forces`
-is found at http://www.wien2k.at/reg_user/unsupported/.
+is found at <http://www.wien2k.at/reg_user/unsupported/>.
 
 `FORCE_SETS` file is created from `phonopy_disp.yaml`, which is an output file
 when creating supercell with displacements, and `case.scf`'s, which are the
@@ -363,6 +364,14 @@ This option perhaps works for the other calculator interfaces than the VASP
 interface, but it is not tested yet. It would be appreciated if you report it to
 the phonopy mailing list when you find it does/doesn't work for any other
 calculator interfaces.
+
+(save_params_option)=
+
+### `--sp` or `--save-params`
+
+Using together with `-f`, force sets are stored in `phonopy_params.yaml` instead
+of `FORCE_SETS`. When `BORN` file is found in the current directory, the
+parameters are also stored in `phonopy_params.yaml`.
 
 ## Create `FORCE_CONSTANTS`
 

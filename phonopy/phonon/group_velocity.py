@@ -1,4 +1,5 @@
 """Group velocity calculation."""
+
 # Copyright (C) 2013 Atsushi Togo
 # All rights reserved.
 #
@@ -39,7 +40,11 @@ from typing import Optional, Union
 import numpy as np
 
 from phonopy.harmonic.derivative_dynmat import DerivativeOfDynamicalMatrix
-from phonopy.harmonic.dynamical_matrix import DynamicalMatrix, DynamicalMatrixNAC
+from phonopy.harmonic.dynamical_matrix import (
+    DynamicalMatrix,
+    DynamicalMatrixGL,
+    DynamicalMatrixNAC,
+)
 from phonopy.phonon.degeneracy import degenerate_sets
 from phonopy.structure.symmetry import Symmetry
 from phonopy.units import VaspToTHz
@@ -102,7 +107,7 @@ class GroupVelocity:
         self._reciprocal_lattice_inv = primitive.cell
         self._reciprocal_lattice = np.linalg.inv(self._reciprocal_lattice_inv)
         self._q_length = q_length
-        if self._dynmat.is_nac() and self._dynmat.nac_method == "gonze":
+        if isinstance(self._dynmat, DynamicalMatrixGL):
             if self._q_length is None:
                 self._q_length = self.Default_q_length
 
@@ -165,6 +170,7 @@ class GroupVelocity:
             "GroupVelocity.get_q_length() is deprecated. "
             "Use q_length attribute instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.q_length
 
@@ -174,6 +180,7 @@ class GroupVelocity:
             "GroupVelocity.set_q_length() is deprecated. "
             "Use q_length attribute instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         self.q_length = q_length
 
@@ -188,6 +195,7 @@ class GroupVelocity:
             "GroupVelocity.get_group_velocity() is deprecated. "
             "Use group_velocities attribute instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.group_velocities
 

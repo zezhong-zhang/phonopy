@@ -2,11 +2,6 @@
 
 # Installation
 
-```{contents}
-:depth: 3
-:local:
-```
-
 (install_conda)=
 
 ## Installation via conda
@@ -84,25 +79,26 @@ export HDF5_USE_FILE_LOCKING=FALSE
 
 The procedure to setup phonopy is explained in this section. It is supposed that
 phonopy is installed on the recent linux distribution like Ubuntu or Fedora with
-Python version 3.7 or later. Mac OS X users may use conda (conda-forge channel)
+Python version 3.8 or later. Mac OS X users may use conda (conda-forge channel)
 packages. Windows users should use conda (conda-forge channel) packages as well.
 
 Prepare the following Python libraries:
 
-- Python (>=3.7) and its header files
-- numpy (>=1.15)
+- Python (>=3.8) and its header files
+- numpy (>=1.17)
 - matplotlib (>=2.2.2)
-- python-yaml (pyyaml)
-- python-h5py (h5py)
-- spglib
+- python-yaml (pyyaml >= 5.3)
+- python-h5py (h5py >= 3.0)
+- spglib (>=2.3)
 
 It is recommended to install seekpath to plot phonon band structure:
 
 - seekpath
+- symfc
 
 Scipy is optional because most of features of phonopy can work without scipy,
-but scipy is needed for fitting to equations of states for quasi-harmonic phonon
-calculation.
+but scipy is needed for symfc and fitting to equations of states for
+quasi-harmonic phonon calculation.
 
 - scipy
 
@@ -114,13 +110,13 @@ For the CP2K interface, the following package will be needed to install:
 
 The python libraries can be installed using conda. Conda packages are
 distributed in binary. Minimum setup of conda envrironment is done by miniforge,
-which is downloaded at https://github.com/conda-forge/miniforge. It is strongly
+which is downloaded at <https://github.com/conda-forge/miniforge>. It is strongly
 recommended to create conda's virtual environment by
 `conda create -n <venvname>` as written above. The installation of necessary
 libraries is done as follows:
 
 ```bash
-% conda install -c conda-forge numpy scipy h5py pyyaml matplotlib-base seekpath spglib
+% conda install -c conda-forge numpy scipy h5py pyyaml matplotlib-base seekpath symfc spglib
 ```
 
 A libblas library installed can be chosen among `[openblas, mkl, blis, netlib]`.
@@ -133,16 +129,21 @@ If specific one is expected, it is installed by (e.g. `openblas`)
 If you need a compiler,
 
 ```
-% conda install -c conda-forge complilers
+% conda install -c conda-forge c-compliler cxx-compiler cmake
 ```
 
 (install_setup_py)=
 
-### Building using setup.py
+### Building using `pip install`
 
-If package installation is not possible or you want to compile with special
-compiler or special options, phonopy is built using `setup.py`. In this case,
-manual modification of `setup.py` may be needed.
+If package installation is not possible or you want to compile with a special
+compiler or special options, phonopy is built using `pip install`. In this case,
+manual modification of `CMakeLists.txt` may be needed.
+
+Note that at version 2.26.0, the build system of phonopy was modernized.
+Nanobind, cmake, and scikit-build-core are used for the building. The receipt is
+written in `CMakeLists.txt` and `pyproject.toml`. The old `setup.py` was
+removed.
 
 1. Get the source code from github
 
@@ -152,12 +153,14 @@ manual modification of `setup.py` may be needed.
    % git checkout master
    ```
 
-2. Run `setup.py` script
+2. Run `pip install`
 
    ```
-   % python setup.py build
-   % pip install -e .
+   % pip install . -vvv
    ```
+
+   The editable install (`pip install -e`) may not work depending on the
+   computer environment.
 
 (install_trouble_shooting)=
 
@@ -182,11 +185,11 @@ packages by
 
 Set correct environment variables `PATH` and `PYTHONPATH`
 
-### When using conda environment, this information is not applicable.
+### When using conda environment, this information is not applicable
 
 In phonopy, `PATH` and `PYTHONPATH` play important roles. Of course the
 information about them can be easily found in internet (e.g.
-https://en.wikipedia.org/wiki/PATH_(variable)), so you really have to find
+<https://en.wikipedia.org/wiki/PATH_(variable)>), so you really have to find
 information by yourself and read them. Even if you can't understand them, first
 you must ask to your colleagues or people before sending this unnecessary
 question (as a researcher using computer simulation) to the mailing list.
@@ -210,4 +213,4 @@ really need. Then logout from the current shell (terminal) and open new shell
 ### Missing Intel libraries when building from source using icc
 
 `LDSHARED="icc -shared"` may be of help. See this github issues,
-https://github.com/phonopy/phonopy/issues/123.
+<https://github.com/phonopy/phonopy/issues/123>.
